@@ -61,6 +61,32 @@
                 console.error("❌ OneSignal Initialization FAILED:", error.message);
             }
         });
+
+        // Debugging function to check notification status from browser console
+        window.checkPushStatus = async function() {
+            if (window.OneSignalDeferred) {
+                window.OneSignalDeferred.push(async function(OneSignal) {
+                    try {
+                        const isEnabled = await OneSignal.isPushNotificationsEnabled();
+                        const externalId = await OneSignal.getExternalUserId();
+                        
+                        console.group("OneSignal Status Check");
+                        console.log(`- External User ID (Client ID): ${externalId || "Not set"}`);
+                        console.log(`- Push Notifications Enabled: ${isEnabled}`);
+                        
+                        if (!isEnabled) {
+                            console.warn("User is not subscribed. Prompting...");
+                            OneSignal.showSlidedownPrompt();
+                        }
+                        console.groupEnd();
+                    } catch (e) {
+                         console.error("OneSignal Status Check failed:", e);
+                    }
+                });
+            } else {
+                console.error("OneSignal SDK not loaded yet.");
+            }
+        }
     </script>
     
     <!-- Fonts and Libraries -->
@@ -245,7 +271,7 @@
     (() => {
         try {
             document.addEventListener('DOMContentLoaded', () => {
-                const API_URL = "https://script.google.com/macros/s/AKfycbx07zliATi8KaNVWALPQugtzCsuJ1CojF_N8-6wUE3AKY18Lho66XZplGSf8v2xdaVf/exec";
+                const API_URL = "https://script.google.com/macros/s/AKfycbzadp29dqdQX0nb0hX4FRFdGgRAWU5ZGML0qh-5QreKGo6ZiKCv_tm4dYQ4eMgDuBC88g/exec";
                 
                 let clientState = { id: null, name: null, avatar: null, containers: [], materialOrders: [] };
                 let currentPageId = 'page-home';
