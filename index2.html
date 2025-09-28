@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>אזור אישי - ח.סבן</title>
     <meta name="theme-color" content="#ffffff"/>
+    <!-- Link to the Web App Manifest -->
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
     <link rel="icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
@@ -126,6 +127,28 @@
         .progress-bar-inner { height: 100%; background-color: var(--brand); border-radius: 4px; transition: width 0.8s ease-out; }
         .mini-map-container { border-radius: 12px; border: 1px solid var(--border); height: 150px; width: 100%; margin-top: 15px; background-color: #eee; }
         .leaflet-control-zoom, .leaflet-control-attribution { display: none !important; }
+
+        /* Install App Button Style */
+        #install-container {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1500;
+            display: none; /* Hidden by default */
+        }
+        #install-btn {
+            background-color: var(--accent);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: popIn 0.5s ease-out;
+        }
     </style>
 </head>
 <body>
@@ -206,6 +229,14 @@
         </nav>
     </div>
 
+    <!-- PWA Install Button -->
+    <div id="install-container">
+        <button id="install-btn" class="btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L6.354 8.146a.5.5 0 1 0-.708.708l2 2z"/></svg>
+            <span>התקן אפליקציה</span>
+        </button>
+    </div>
+
     <div id="splash-screen"><div id="splash-logo"><img src="https://i.postimg.cc/2SbDgD1B/1.png" alt="לוגו ח.סבן"></div><div class="splash-loader"></div></div>
     <div id="toast-container"></div>
     <div id="modal-container" class="modal-overlay"></div>
@@ -220,9 +251,11 @@
                 let currentPageId = 'page-home';
                 let mapInstances = {};
                 const dom = {};
+                let deferredInstallPrompt = null;
                 
                 function initApp() {
                     cacheDomElements();
+                    setupInstallPrompt();
                     updateClock();
                     setInterval(updateClock, 1000);
                     const storedClientId = localStorage.getItem('saban_client_id');
@@ -249,9 +282,35 @@
                         profileAvatar: document.getElementById('profile-avatar'),
                         clock: document.getElementById('clock'),
                         date: document.getElementById('date'),
+                        installContainer: document.getElementById('install-container'),
+                        installBtn: document.getElementById('install-btn'),
                     });
                 }
                 
+                // --- PWA Install Logic ---
+                function setupInstallPrompt() {
+                    window.addEventListener('beforeinstallprompt', (e) => {
+                        e.preventDefault();
+                        deferredInstallPrompt = e;
+                        dom.installContainer.style.display = 'block';
+                    });
+
+                    dom.installBtn.addEventListener('click', async () => {
+                        if (!deferredInstallPrompt) return;
+                        deferredInstallPrompt.prompt();
+                        const { outcome } = await deferredInstallPrompt.userChoice;
+                        console.log(`User response to the install prompt: ${outcome}`);
+                        deferredInstallPrompt = null;
+                        dom.installContainer.style.display = 'none';
+                    });
+
+                    window.addEventListener('appinstalled', () => {
+                        console.log('PWA was installed');
+                        dom.installContainer.style.display = 'none';
+                    });
+                }
+
+
                 async function apiPost(body) {
                     try {
                         const response = await fetch(API_URL, { method: 'POST', mode: 'cors', body: JSON.stringify(body), headers: { 'Content-Type': 'text/plain' } });
