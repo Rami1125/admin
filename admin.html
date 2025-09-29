@@ -4,409 +4,290 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>לוח ניהול הזמנות - ח.סבן</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
         :root {
             --brand: #0b72b9; --accent: #ff9f1c; --bg: #f0f2f5; --card: #ffffff;
             --text-dark: #1a202c; --text-light: #4a5568; --text-muted: #718096;
             --border: #e2e8f0; --success: #38a169; --warning: #dd6b20; --danger: #e53e3e;
-            --radius: 16px; --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius: 12px; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        body { font-family: 'Assistant', sans-serif; background-color: var(--bg); }
-        .tab.active { border-color: var(--brand); color: var(--brand); }
-        @keyframes blink { 50% { opacity: 0.6; } }
-        .new-order-alert { animation: blink 1.5s infinite; }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="text-text-dark">
-    <div class="container mx-auto p-4 md:p-6">
-        <header class="bg-brand text-white p-6 rounded-lg shadow-lg mb-6">
-            <h1 class="text-3xl font-bold">לוח ניהול הזמנות (CRM)</h1>
-            <p class="opacity-80">מערכת מרכזית לניהול קשרי לקוחות והתראות</p>
-        </header>
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text-dark); direction: rtl; line-height: 1.6; }
         
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="stat-card"><div id="new-orders-count" class="stat-number">0</div><div class="stat-label">הזמנות חדשות</div></div>
-            <div class="stat-card"><div id="processing-orders-count" class="stat-number">0</div><div class="stat-label">הזמנות בטיפול</div></div>
-            <div class="stat-card"><div id="chat-messages-count" class="stat-number">0</div><div class="stat-label">הודעות חדשות בצ'אט</div></div>
-            <div class="stat-card"><div id="completed-orders-count" class="stat-number">0</div><div class="stat-label">הזמנות שהושלמו</div></div>
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { background: var(--brand); color: white; padding: 20px; border-radius: var(--radius); margin-bottom: 20px; box-shadow: var(--shadow); }
+        .header h1 { margin: 0; font-size: 24px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .stat-card { background: var(--card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; border-left: 5px solid var(--brand); }
+        .stat-number { font-size: 36px; font-weight: 700; color: var(--brand); }
+        .stat-label { color: var(--text-muted); font-size: 14px; font-weight: 600; }
+        
+        .orders-section { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+        .section-header { background-color: #f8f9fa; border-bottom: 1px solid var(--border); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .section-title { font-size: 18px; font-weight: 700; color: var(--brand); }
+        
+        .orders-table { width: 100%; border-collapse: collapse; }
+        .orders-table th, .orders-table td { padding: 12px 15px; text-align: right; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .orders-table th { background: #f8f9fa; font-weight: 600; color: var(--text-light); text-transform: uppercase; font-size: 12px; }
+        .orders-table tr:last-child td { border-bottom: none; }
+        .orders-table tr:hover { background: #f7fafc; }
+        
+        .btn { padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; margin: 2px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+        .btn svg { width: 16px; height: 16px; }
+        .btn-primary { background: var(--brand); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; }
+        .status-new { background: #e3f2fd; color: #1976d2; }
+        .status-processing { background: #fff3e0; color: #f57c00; }
+        .status-completed { background: #e8f5e8; color: #388e3c; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; backdrop-filter: blur(5px); }
+        .modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: var(--radius); width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        .close { font-size: 28px; cursor: pointer; color: var(--text-muted); font-weight: 300; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-light); }
+        .form-input, .form-textarea, .form-select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 14px; }
+        .form-textarea { height: 100px; resize: vertical; }
+        
+        .notification-badge { background: var(--danger); color: white; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-left: 8px; font-weight: 700; }
+        .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+        .tab { padding: 12px 20px; cursor: pointer; border-bottom: 3px solid transparent; color: var(--text-muted); font-weight: 600; }
+        .tab.active { border-bottom-color: var(--brand); font-weight: 700; color: var(--brand); }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .loading { text-align: center; padding: 40px; color: var(--text-muted); }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>לוח ניהול הזמנות - ח.סבן</h1>
+            <p>מנהל מחלקת הזמנות</p>
         </div>
-
-        <!-- Main Content -->
-        <div class="bg-card p-4 sm:p-6 rounded-lg shadow-lg">
-            <div class="flex justify-between items-center mb-4 border-b pb-4">
-                <h2 class="text-xl font-bold">מרכז הבקרה</h2>
-                <div>
-                    <button id="broadcast-btn" class="btn bg-accent text-white">שלח הודעה לכולם</button>
-                    <button id="refresh-btn" class="btn bg-brand text-white">רענן נתונים</button>
+        
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-number" id="total-orders">0</div><div class="stat-label">הזמנות כוללות</div></div>
+            <div class="stat-card"><div class="stat-number" id="new-orders">0</div><div class="stat-label">הזמנות חדשות</div></div>
+            <div class="stat-card"><div class="stat-number" id="processing-orders">0</div><div class="stat-label">בטיפול</div></div>
+            <div class="stat-card"><div class="stat-number" id="completed-orders">0</div><div class="stat-label">הושלמו</div></div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="materials">הזמנות חומרי בניין</div>
+            <div class="tab" data-tab="containers">הזמנות מכולות</div>
+        </div>
+        
+        <div class="tab-content active" id="materials-tab">
+            <div class="orders-section">
+                <div class="section-header">
+                    <div class="section-title">הזמנות חומרי בניין <span class="notification-badge" id="materials-badge">0</span></div>
+                    <button class="btn btn-primary" onclick="loadOrders()">רענן</button>
                 </div>
+                <table class="orders-table"><thead id="materials-orders-head"></thead><tbody id="materials-orders-body"></tbody></table>
             </div>
-
-            <!-- Tabs -->
-            <div class="border-b">
-                <nav class="flex -mb-px space-x-reverse space-x-4">
-                    <button class="tab active" data-tab="orders">הזמנות אחרונות</button>
-                    <button class="tab" data-tab="chat">הודעות צ'אט</button>
-                </nav>
-            </div>
-
-            <!-- Orders Tab -->
-            <div id="orders-tab" class="tab-content py-4">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-right">
-                        <thead>
-                            <tr class="border-b">
-                                <th class="p-3">תאריך</th>
-                                <th class="p-3">לקוח</th>
-                                <th class="p-3">סוג</th>
-                                <th class="p-3">סטטוס</th>
-                                <th class="p-3">פעולות</th>
-                            </tr>
-                        </thead>
-                        <tbody id="orders-tbody">
-                           <!-- Orders will be injected here -->
-                        </tbody>
-                    </table>
+        </div>
+        
+        <div class="tab-content" id="containers-tab">
+            <div class="orders-section">
+                <div class="section-header">
+                    <div class="section-title">הזמנות מכולות <span class="notification-badge" id="containers-badge">0</span></div>
+                    <button class="btn btn-primary" onclick="loadOrders()">רענן</button>
                 </div>
-            </div>
-
-            <!-- Chat Tab -->
-            <div id="chat-tab" class="tab-content hidden py-4">
-                 <div class="overflow-x-auto">
-                    <table class="w-full text-right">
-                        <thead>
-                            <tr class="border-b">
-                                <th class="p-3">תאריך</th>
-                                <th class="p-3">לקוח</th>
-                                <th class="p-3">הודעה</th>
-                                <th class="p-3">פעולות</th>
-                            </tr>
-                        </thead>
-                        <tbody id="chat-tbody">
-                           <!-- Chat messages will be injected here -->
-                        </tbody>
-                    </table>
-                </div>
+                <table class="orders-table"><thead id="containers-orders-head"></thead><tbody id="containers-orders-body"></tbody></table>
             </div>
         </div>
     </div>
-
-    <!-- Modal for Order Details / Sending Notifications -->
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-full overflow-y-auto">
-            <div id="modal-content">
-                <!-- Modal content will be injected here -->
+    
+    <div id="notification-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>שלח הודעה ללקוח</h2>
+                <span class="close" onclick="closeNotificationModal()">&times;</span>
+            </div>
+            <!-- Hidden input to store the client ID -->
+            <input type="hidden" id="notification-client-id">
+            <div class="form-group">
+                <label class="form-label">לקוח:</label>
+                <input type="text" id="notification-client-name" class="form-input" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">כותרת ההודעה:</label>
+                <input type="text" id="notification-title" class="form-input" placeholder="לדוגמה: עדכון סטטוס הזמנה">
+            </div>
+            <div class="form-group">
+                <label class="form-label">תוכן ההודעה:</label>
+                <textarea id="notification-message" class="form-textarea" placeholder="כתוב כאן את ההודעה ללקוח..."></textarea>
+            </div>
+            <div style="text-align: left; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="sendNotification()">שלח התראה</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURATION ---
-        const API_URL = "https://script.google.com/macros/s/AKfycbzadp29dqdQX0nb0hX4FRFdGgRAWU5ZGML0qh-5QreKGo6ZiKCv_tm4dYQ4eMgDuBC88g/exec"; // Same URL as in the client app
-        
-        // --- DOM ELEMENTS ---
-        const dom = {
-            refreshBtn: document.getElementById('refresh-btn'),
-            broadcastBtn: document.getElementById('broadcast-btn'),
-            tabs: document.querySelectorAll('.tab'),
-            tabContents: document.querySelectorAll('.tab-content'),
-            ordersTbody: document.getElementById('orders-tbody'),
-            chatTbody: document.getElementById('chat-tbody'),
-            modal: document.getElementById('modal'),
-            modalContent: document.getElementById('modal-content'),
-            stats: {
-                newOrders: document.getElementById('new-orders-count'),
-                processingOrders: document.getElementById('processing-orders-count'),
-                chatMessages: document.getElementById('chat-messages-count'),
-                completedOrders: document.getElementById('completed-orders-count'),
-            }
-        };
+        const API_URL = "https://script.google.com/macros/s/AKfycbx07zliATi8KaNVWALPQugtzCsuJ1CojF_N8-6wUE3AKY18Lho66XZplGSf8v2xdaVf/exec";
+        let allOrders = [];
 
-        // --- STATE ---
-        let state = {
-            orders: [],
-            chatMessages: []
-        };
-        
-        // --- API FUNCTIONS ---
         async function apiPost(body) {
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     mode: 'cors',
+                    cache: 'no-cache',
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(body)
                 });
-                if (!response.ok) throw new Error(`Network error: ${response.statusText}`);
                 const data = await response.json();
-                if (data.status === 'error') throw new Error(data.message);
+                if (data.status === 'error') {
+                    throw new Error(data.message);
+                }
                 return data;
             } catch (error) {
                 console.error('API Error:', error);
                 alert(`שגיאת תקשורת: ${error.message}`);
-                return null;
+                throw error;
             }
         }
 
-        async function fetchData() {
-            dom.refreshBtn.disabled = true;
-            dom.refreshBtn.textContent = 'מרענן...';
-            
-            const data = await apiPost({ action: 'getAdminDashboardData' });
-            
-            if (data) {
-                state.orders = data.orders || [];
-                state.chatMessages = data.chatMessages || [];
-                render();
+        async function loadOrders() {
+            const materialsBody = document.getElementById('materials-orders-body');
+            const containersBody = document.getElementById('containers-orders-body');
+            materialsBody.innerHTML = `<tr><td colspan="7" class="loading">טוען הזמנות...</td></tr>`;
+            containersBody.innerHTML = `<tr><td colspan="8" class="loading">טוען הזמנות...</td></tr>`;
+
+            try {
+                const data = await apiPost({ action: 'getAdminDashboardData' });
+                allOrders = data.orders || [];
+                renderTables();
+                updateStats();
+            } catch (error) {
+                materialsBody.innerHTML = `<tr><td colspan="7" class="loading">שגיאה בטעינת הזמנות.</td></tr>`;
+                containersBody.innerHTML = `<tr><td colspan="8" class="loading">שגיאה בטעינת הזמנות.</td></tr>`;
             }
+        }
+
+        function renderTables() {
+            const materialsOrders = allOrders.filter(o => o.orderType === 'materials');
+            const containerOrders = allOrders.filter(o => o.orderType === 'container');
             
-            dom.refreshBtn.disabled = false;
-            dom.refreshBtn.textContent = 'רענן נתונים';
+            renderTable('materials', materialsOrders, ['תאריך קליטה', 'מספר לקוח', 'שם לקוח', 'שם פרויקט', 'פריטים', 'סטטוס', 'פעולות']);
+            renderTable('containers', containerOrders, ['תאריך הזמנה', 'מספר לקוח', 'שם לקוח', 'כתובת', 'סוג פעולה', 'סטטוס', 'פעולות']);
         }
 
-        // --- RENDER FUNCTIONS ---
-        function render() {
-            renderStats();
-            renderOrdersTable();
-            renderChatTable();
-        }
+        function renderTable(type, data, headers) {
+            const head = document.getElementById(`${type}-orders-head`);
+            const body = document.getElementById(`${type}-orders-body`);
 
-        function renderStats() {
-            const newOrders = state.orders.filter(o => o.status === 'חדש').length;
-            const processingOrders = state.orders.filter(o => o.status === 'בטיפול').length;
-            const completedOrders = state.orders.filter(o => o.status === 'הושלם').length;
-            
-            dom.stats.newOrders.textContent = newOrders;
-            dom.stats.processingOrders.textContent = processingOrders;
-            dom.stats.completedOrders.textContent = completedOrders;
-            dom.stats.chatMessages.textContent = state.chatMessages.length; // Assuming all are "new" for simplicity
-        }
+            head.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
 
-        function renderOrdersTable() {
-            if (state.orders.length === 0) {
-                dom.ordersTbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">אין הזמנות להצגה</td></tr>';
+            if (data.length === 0) {
+                body.innerHTML = `<tr><td colspan="${headers.length}" class="loading">אין הזמנות חדשות.</td></tr>`;
                 return;
             }
-            dom.ordersTbody.innerHTML = state.orders.map(order => `
-                <tr class="border-b hover:bg-gray-50 ${order.status === 'חדש' ? 'new-order-alert font-bold' : ''}">
-                    <td class="p-3">${new Date(order.timestamp).toLocaleString('he-IL')}</td>
-                    <td class="p-3">${order.clientName} (${order.clientId})</td>
-                    <td class="p-3">${order.orderType === 'materials' ? 'חומרים' : 'מכולה'}</td>
-                    <td class="p-3"><span class="status-badge ${order.status}">${order.status}</span></td>
-                    <td class="p-3 space-x-1 space-x-reverse">
-                        <button class="btn-small bg-blue-500" onclick="openOrderDetailsModal('${order.orderId}')">פרטים</button>
-                        <button class="btn-small bg-green-500" onclick="openNotificationModal('${order.clientId}', '${order.orderId}')">שלח עדכון</button>
-                    </td>
-                </tr>
-            `).join('');
+
+            body.innerHTML = data.map(order => {
+                const rowData = {
+                    'תאריך קליטה': formatDate(order['תאריך קליטה']),
+                    'תאריך הזמנה': formatDate(order['תאריך הזמנה']),
+                    'מספר לקוח': order['מספר לקוח'],
+                    'שם לקוח': order['שם לקוח'],
+                    'שם פרויקט': order['שם פרויקט'],
+                    'פריטים': order['פריטים'] ? order['פריטים'].substring(0, 30) + '...' : '---',
+                    'כתובת': order['כתובת'],
+                    'סוג פעולה': order['סוג פעולה'],
+                    'סטטוס': `<span class="status-badge status-${getStatusClass(order['סטטוס'])}">${order['סטטוס']}</span>`,
+                    'פעולות': `
+                        <button class="btn btn-success" onclick="openNotificationModal('${order['מספר לקוח']}', '${order['שם לקוח']}')">
+                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" /></svg>
+                            שלח התראה
+                        </button>
+                    `
+                };
+                return `<tr>${headers.map(h => `<td>${rowData[h] || ''}</td>`).join('')}</tr>`;
+            }).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('total-orders').textContent = allOrders.length;
+            const newMaterials = allOrders.filter(o => o.orderType === 'materials' && o['סטטוס'] === 'חדשה').length;
+            const newContainers = allOrders.filter(o => o.orderType === 'container' && o['סטטוס'] === 'חדשה').length;
+            document.getElementById('new-orders').textContent = newMaterials + newContainers;
+            document.getElementById('processing-orders').textContent = allOrders.filter(o => o['סטטוס'] === 'בטיפול').length;
+            document.getElementById('completed-orders').textContent = allOrders.filter(o => o['סטטוס'] === 'הושלמה').length;
+            document.getElementById('materials-badge').textContent = newMaterials;
+            document.getElementById('containers-badge').textContent = newContainers;
+        }
+
+        function openNotificationModal(clientId, clientName) {
+            document.getElementById('notification-client-id').value = clientId;
+            document.getElementById('notification-client-name').value = clientName;
+            document.getElementById('notification-modal').style.display = 'block';
+        }
+
+        function closeNotificationModal() {
+            document.getElementById('notification-modal').style.display = 'none';
         }
         
-         function renderChatTable() {
-            if (state.chatMessages.length === 0) {
-                dom.chatTbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">אין הודעות להצגה</td></tr>';
-                return;
-            }
-            dom.chatTbody.innerHTML = state.chatMessages.map(msg => `
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-3">${new Date(msg.timestamp).toLocaleString('he-IL')}</td>
-                    <td class="p-3">${msg.clientName} (${msg.clientId})</td>
-                    <td class="p-3 truncate max-w-sm">${msg.message}</td>
-                    <td class="p-3">
-                         <button class="btn-small bg-green-500" onclick="openNotificationModal('${msg.clientId}')">השב בהתראה</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // --- MODAL LOGIC ---
-        function openModal(content) {
-            dom.modalContent.innerHTML = content;
-            dom.modal.classList.remove('hidden');
-            dom.modal.classList.add('flex');
-        }
-
-        function closeModal() {
-            dom.modal.classList.add('hidden');
-            dom.modal.classList.remove('flex');
-            dom.modalContent.innerHTML = '';
-        }
-        
-        function openOrderDetailsModal(orderId) {
-            const order = state.orders.find(o => o.orderId === orderId);
-            if (!order) return;
-
-            let itemsHtml = '';
-            if (order.orderType === 'materials' && order.items) {
-                itemsHtml = `
-                    <h4 class="font-bold mt-4 mb-2">פריטים:</h4>
-                    <ul class="list-disc list-inside text-gray-700">
-                        ${JSON.parse(order.items).map(item => `<li>${item.quantity} ${item['יחידת מידה'] || ''} - ${item['שם מוצר']}</li>`).join('')}
-                    </ul>`;
-            }
-
-            const content = `
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold">פרטי הזמנה #${order.orderId}</h3>
-                        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800">&times;</button>
-                    </div>
-                    <div class="space-y-2 text-gray-800">
-                        <p><strong>לקוח:</strong> ${order.clientName} (ID: ${order.clientId})</p>
-                        <p><strong>כתובת:</strong> ${order.deliveryAddress || order.address}</p>
-                        <p><strong>הערות:</strong> ${order.notes || 'אין'}</p>
-                        ${itemsHtml}
-                    </div>
-                    <div class="mt-6 pt-4 border-t">
-                        <label for="status-select" class="font-bold">שנה סטטוס:</label>
-                        <div class="flex gap-2 mt-2">
-                            <select id="status-select" class="flex-grow p-2 border rounded">
-                                <option value="חדש" ${order.status === 'חדש' ? 'selected' : ''}>חדש</option>
-                                <option value="בטיפול" ${order.status === 'בטיפול' ? 'selected' : ''}>בטיפול</option>
-                                <option value="הושלם" ${order.status === 'הושלם' ? 'selected' : ''}>הושלם</option>
-                            </select>
-                            <button class="btn bg-brand text-white" onclick="updateOrderStatus('${order.orderId}')">עדכן סטטוס</button>
-                        </div>
-                    </div>
-                </div>`;
-            openModal(content);
-        }
-
-        function openNotificationModal(clientId, orderId = '') {
-            const clientName = state.orders.find(o => o.clientId === clientId)?.clientName || state.chatMessages.find(c => c.clientId === clientId)?.clientName || '';
-            const content = `
-                 <div class="p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold">שליחת התראה ללקוח</h3>
-                        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800">&times;</button>
-                    </div>
-                    <div class="space-y-4">
-                        <p><strong>נמען:</strong> ${clientName} (ID: ${clientId})</p>
-                        ${orderId ? `<p><strong>בהקשר להזמנה:</strong> #${orderId}</p>` : ''}
-                        <div>
-                            <label for="notification-title" class="block font-bold mb-1">כותרת</label>
-                            <input type="text" id="notification-title" class="w-full p-2 border rounded" placeholder="לדוגמה: עדכון על הזמנתך">
-                        </div>
-                        <div>
-                            <label for="notification-body" class="block font-bold mb-1">תוכן ההודעה</label>
-                            <textarea id="notification-body" rows="4" class="w-full p-2 border rounded" placeholder="ההזמנה שלך התקבלה והיא בטיפול..."></textarea>
-                        </div>
-                        <div class="text-left">
-                            <button class="btn bg-green-500 text-white" onclick="sendNotification('${clientId}')">שלח התראה</button>
-                        </div>
-                    </div>
-                 </div>`;
-            openModal(content);
-        }
-        
-        function openBroadcastModal() {
-             const content = `
-                 <div class="p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold">שליחת התראה לכל הלקוחות</h3>
-                        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800">&times;</button>
-                    </div>
-                    <div class="space-y-4">
-                        <div>
-                            <label for="broadcast-title" class="block font-bold mb-1">כותרת</label>
-                            <input type="text" id="broadcast-title" class="w-full p-2 border rounded" placeholder="לדוגמה: עדכון חשוב מח.סבן">
-                        </div>
-                        <div>
-                            <label for="broadcast-body" class="block font-bold mb-1">תוכן ההודעה</label>
-                            <textarea id="broadcast-body" rows="4" class="w-full p-2 border rounded" placeholder="לקוחות יקרים, ..."></textarea>
-                        </div>
-                        <div class="text-left">
-                            <button class="btn bg-accent text-white" onclick="sendBroadcastNotification()">שלח לכולם</button>
-                        </div>
-                    </div>
-                 </div>`;
-            openModal(content);
-        }
-
-        // --- ACTION HANDLERS ---
-        async function updateOrderStatus(orderId) {
-            const select = document.getElementById('status-select');
-            const newStatus = select.value;
-            const result = await apiPost({ action: 'updateOrderStatus', orderId, newStatus });
-            if (result) {
-                alert('סטטוס עודכן בהצלחה!');
-                closeModal();
-                fetchData();
-            }
-        }
-
-        async function sendNotification(clientId) {
+        async function sendNotification() {
+            const clientId = document.getElementById('notification-client-id').value;
             const title = document.getElementById('notification-title').value;
-            const body = document.getElementById('notification-body').value;
-            if (!title || !body) {
-                alert('יש למלא כותרת ותוכן להודעה.');
+            const message = document.getElementById('notification-message').value;
+
+            if (!clientId || !title.trim() || !message.trim()) {
+                alert('אנא מלא את כל השדות.');
                 return;
             }
-            const result = await apiPost({ action: 'sendNotificationToClient', clientId, title, body });
-            if (result) {
-                alert('ההתראה נשלחה בהצלחה!');
-                closeModal();
+            
+            try {
+                const data = await apiPost({
+                    action: 'sendNotificationToClient',
+                    clientId: clientId,
+                    title: title,
+                    message: message
+                });
+                alert(data.message || 'ההתראה נשלחה!');
+                closeNotificationModal();
+            } catch(error) {
+                // The error is already alerted by apiPost
             }
         }
 
-        async function sendBroadcastNotification() {
-             const title = document.getElementById('broadcast-title').value;
-            const body = document.getElementById('broadcast-body').value;
-            if (!title || !body) {
-                alert('יש למלא כותרת ותוכן להודעה.');
-                return;
-            }
-            const result = await apiPost({ action: 'sendNotificationToAll', title, body });
-            if (result) {
-                alert('ההתראה נשלחה לכל הלקוחות הרשומים!');
-                closeModal();
-            }
+        function formatDate(dateString) {
+            if (!dateString) return '---';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+        
+        function getStatusClass(status) {
+            if (status === 'חדשה') return 'new';
+            if (status === 'בטיפול') return 'processing';
+            if (status === 'הושלמה') return 'completed';
+            return 'new';
         }
 
-        // --- INITIALIZATION ---
-        function init() {
-            // Style definitions for dynamic elements
-            const style = document.createElement('style');
-            style.innerHTML = `
-                .stat-card { background-color: var(--card); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; }
-                .stat-number { font-size: 2.5rem; font-weight: bold; color: var(--brand); }
-                .stat-label { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-                .btn { padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
-                .btn:hover { transform: translateY(-2px); }
-                .tab { padding: 0.75rem 1rem; cursor: pointer; border-bottom: 3px solid transparent; color: var(--text-muted); font-weight: 600; }
-                .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; text-transform: capitalize; }
-                .status-badge.חדש { background-color: #e0f2fe; color: #0284c7; }
-                .status-badge.בטיפול { background-color: #fffbeb; color: #f59e0b; }
-                .status-badge.הושלם { background-color: #f0fdf4; color: #16a34a; }
-                .btn-small { padding: 0.25rem 0.75rem; border-radius: 6px; color: white; font-size: 0.8rem; }
-            `;
-            document.head.appendChild(style);
-            
-            // Event Listeners
-            dom.refreshBtn.addEventListener('click', fetchData);
-            dom.broadcastBtn.addEventListener('click', openBroadcastModal);
-            
-            dom.tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    dom.tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    dom.tabContents.forEach(content => content.classList.add('hidden'));
-                    document.getElementById(`${tab.dataset.tab}-tab`).classList.remove('hidden');
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOrders();
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelector('.tab.active').classList.remove('active');
+                    document.querySelector('.tab-content.active').classList.remove('active');
+                    this.classList.add('active');
+                    document.getElementById(this.dataset.tab + '-tab').classList.add('active');
                 });
             });
+        });
 
-            dom.modal.addEventListener('click', (e) => {
-                if (e.target === dom.modal) closeModal();
-            });
-
-            // Initial data fetch
-            fetchData();
-            // Auto-refresh every 30 seconds
-            setInterval(fetchData, 30000);
-        }
-
-        init();
     </script>
 </body>
 </html>
+
