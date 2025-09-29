@@ -9,49 +9,19 @@
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="[https://i.postimg.cc/2SbDgD1B/1.png](https://i.postimg.cc/2SbDgD1B/1.png)">
     <link rel="icon" href="[https://i.postimg.cc/2SbDgD1B/1.png](https://i.postimg.cc/2SbDgD1B/1.png)">
-
-    <!-- OneSignal SDK for Push Notifications -->
-    <script src="[https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js](https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js)" defer></script>
-    <script>
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        
-        async function setOneSignalExternalId(clientId) {
-            if (!clientId || !window.OneSignalDeferred) return;
-            
-            window.OneSignalDeferred.push(async function(OneSignal) {
-                try {
-                    await OneSignal.setExternalUserId(String(clientId));
-                    console.log(`OneSignal: External User ID set to client ID: ${clientId}`);
-                    const isSubscribed = await OneSignal.isPushNotificationsEnabled();
-                    if (isSubscribed && window.showToast) {
-                         window.showToast(`✅ התראות Push מחוברות`, '🔔');
-                    } else {
-                         console.warn(`OneSignal: User ${clientId} has not subscribed to notifications.`);
-                         OneSignal.showSlidedownPrompt();
-                    }
-                } catch(e) {
-                    console.error("OneSignal setup failed (External ID):", e);
-                }
-            });
-        }
-        
-        OneSignalDeferred.push(async function(OneSignal) {
-            try {
-                await OneSignal.init({
-                    appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
-                    safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
-                    allowLocalhostAsSecureOrigin: true,
-                    notifyButton: {
-                        enable: true,
-                        text: {
-                            'tip.state.unsubscribed': 'הפעל התראות', 'tip.state.subscribed': 'אתה רשום להתראות',
-                            'tip.state.blocked': 'חסמת התראות', 'message.prenotify': 'לחץ כדי להירשם להתראות',
-                            'message.action.subscribed': 'תודה על ההרשמה!', 'message.action.resubscribed': 'נרשמת מחדש',
-                            'message.action.unsubscribed': 'לא תקבל יותר התראות', 'dialog.main.title': 'ניהול התראות',
-                            'dialog.main.button.subscribe': 'הירשם', 'dialog.main.button.unsubscribe': 'בטל הרשמה',
-                        }
-                    },
-                });
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
+      safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
+      notifyButton: {
+        enable: true,
+      },
+    });
+  });
+</script>
                 
                 const clientId = localStorage.getItem('saban_client_id');
                 if (clientId) {
